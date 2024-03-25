@@ -1,6 +1,9 @@
 import { app } from 'electron';
 import fileUrl from 'file-url';
-import BrowserLikeWindow from '../index';
+import BrowserLikeWindow from '../index.js';
+import { fileURLToPath } from 'url';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 let browser;
 

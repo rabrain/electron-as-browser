@@ -20,6 +20,7 @@
     "*.js",
     "*.ts"
   ],
+  "type": "module",
   "scripts": {
     "docs": "documentation build *.js -f html -o docs",
     "start:control": "npx babel --watch example/renderer/control.jsx --out-file example/renderer/control-compiled.js",
@@ -33,10 +34,13 @@
     "@babel/core": "^7.5.5",
     "@babel/preset-env": "^7.5.5",
     "@babel/preset-react": "^7.0.0",
-    "classnames": "^2.2.6",
-    "electron": "^18.3.7",
+    "@types/react": "^18.2.69",
+    "@types/react-dom": "^18.2.22",
+    "classnames": "^2.5.1",
+    "electron": "^29.1.5",
     "file-url": "^2.0.2",
     "react": "^16.8.6",
-    "react-dom": "^16.8.6"
+    "react-dom": "^16.8.6",
+    "typescript": "^5.4.3"
   }
 }

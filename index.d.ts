@@ -1,9 +1,9 @@
 import type { BrowserWindow, BrowserWindowConstructorOptions, WebPreferences, Rectangle } from 'electron';
 import type { EventEmitter } from 'events';
 
-type TabID = number;
+export type TabID = number;
 
-interface Tab {
+export interface Tab {
     url: string;
     href: string;
     title: string;
@@ -13,7 +13,7 @@ interface Tab {
     canGoForward: boolean;
 }
 
-interface Tabs {
+export interface Tabs {
     [key: number]: Tab;
 }
 
@@ -32,7 +32,7 @@ interface BrowserLikeWindowOptions {
     debug?: boolean;
 }
 
-export default class BrowserLikeWindow extends EventEmitter {
+export class BrowserLikeWindow extends EventEmitter {
     win: BrowserWindow;
 
     constructor(options: BrowserLikeWindowOptions);
@@ -61,3 +61,5 @@ export default class BrowserLikeWindow extends EventEmitter {
     switchTab(viewId: TabID): void;
     destroyView(viewId: TabID): void;
 }
+
+export default BrowserLikeWindow
