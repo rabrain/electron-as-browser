@@ -1,6 +1,6 @@
 {
   "name": "electron-as-browser",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Make electron like browser easy and flexible.",
   "keywords": [
     "electron",
@@ -14,12 +14,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hulufei/electron-as-browser"
+    "url": "git+https://github.com/hulufei/electron-as-browser.git"
   },
   "files": [
-    "index.js",
-    "useConnect.js",
-    "control.js"
+    "*.js",
+    "*.ts"
   ],
   "scripts": {
     "docs": "documentation build *.js -f html -o docs",
