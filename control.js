@@ -53,7 +53,7 @@ const sendNewTab = (url, references) => ipcRenderer.send('new-tab', url, referen
  */
 const sendSwitchTab = id => ipcRenderer.send('switch-tab', id);
 
-module.exports = {
+export default {
   sendEnterURL, // sendEnterURL(url) to load url
   sendChangeURL, // sendChangeURL(url) on addressbar input change
   sendGoBack,
