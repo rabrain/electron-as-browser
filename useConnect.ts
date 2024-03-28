@@ -1,4 +1,4 @@
-import { IpcRendererEvent, ipcRenderer } from 'electron';
+import type { IpcRendererEvent, IpcRenderer } from 'electron';
 import { useEffect, useState } from 'react';
 import type { TabID, Tab, Tabs } from './index.d.ts';
 
@@ -7,6 +7,7 @@ import type { TabID, Tab, Tabs } from './index.d.ts';
 const noop = () => { };
 
 interface Options {
+  ipcRenderer: IpcRenderer
   onTabsUpdate?: (tab: Tab) => void
   onTabActive?: (tab: Tab) => void
 }
@@ -20,8 +21,8 @@ type Listener = (event: IpcRendererEvent, ...args: any[]) => void
  * @param {function} options.onTabsUpdate - trigger after tabs updated(title, favicon, loading etc.)
  * @param {function} options.onTabActive - trigger after active tab changed
  */
-export default function useConnect(options: Options | undefined = {}) {
-  const { onTabsUpdate = noop, onTabActive = noop } = options;
+export default function useConnect(options: Options) {
+  const { onTabsUpdate = noop, onTabActive = noop, ipcRenderer } = options;
   const [tabs, setTabs] = useState({} as Tabs);
   const [tabIDs, setTabIDs] = useState([] as TabID[]);
   const [activeID, setActiveID] = useState(0 as TabID);
