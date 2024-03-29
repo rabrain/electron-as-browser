@@ -11,6 +11,9 @@ function createWindow() {
   browser = new BrowserLikeWindow({
     controlHeight: 99,
     controlPanel: fileUrl(`${__dirname}/renderer/control.html`),
+    winOptions: {
+      titleBarStyle: 'hiddenInset'
+    },
     startPage: 'https://google.com',
     blankTitle: 'New tab',
     debug: true // will open controlPanel's devtools
