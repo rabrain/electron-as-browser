@@ -1,6 +1,9 @@
 import { app } from 'electron';
 import fileUrl from 'file-url';
-import BrowserLikeWindow from '../index';
+import BrowserLikeWindow from '../index.js';
+import { fileURLToPath } from 'url';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 let browser;
 
@@ -8,6 +11,9 @@ function createWindow() {
   browser = new BrowserLikeWindow({
     controlHeight: 99,
     controlPanel: fileUrl(`${__dirname}/renderer/control.html`),
+    winOptions: {
+      titleBarStyle: 'hiddenInset'
+    },
     startPage: 'https://google.com',
     blankTitle: 'New tab',
     debug: true // will open controlPanel's devtools

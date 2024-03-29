@@ -1,4 +1,4 @@
-import { IpcRenderer } from 'electron';
+import type { IpcRenderer } from 'electron';
 
 // Define the TabID type (assuming it's a string or number)
 type TabID = string | number;
@@ -19,4 +19,4 @@ interface ControlActions {
 // Declare the module
 declare const control: ControlActions;
 
-export = control;
+export default control;

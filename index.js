@@ -373,7 +373,7 @@ export default class BrowserLikeWindow extends EventEmitter {
 
   setCurrentView(viewId) {
     if (!viewId) return;
-    this.win.removeBrowserView(this.currentView);
+    if (this.currentView) this.win.removeBrowserView(this.currentView);
     this.win.addBrowserView(this.views[viewId]);
     this.currentViewId = viewId;
   }
