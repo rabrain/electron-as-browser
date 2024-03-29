@@ -1,8 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
+import { ipcRenderer } from 'electron';
 import cx from 'classnames';
 import useConnect from '../../useConnect';
-import * as action from '../../control';
+import action from '../../control';
 
 const IconLoading = () => (
   <svg
@@ -91,7 +93,7 @@ const IconRight = () => (
 );
 
 function Control() {
-  const { tabs, tabIDs, activeID } = useConnect();
+  const { tabs, tabIDs, activeID } = useConnect({ ipcRenderer });
 
   const { url, canGoForward, canGoBack, isLoading } = tabs[activeID] || {};
 
@@ -102,7 +104,7 @@ function Control() {
   };
   const onPressEnter = e => {
     if (e.keyCode !== 13) return;
-    const v = e.target.value.trim();
+    const v = e.currentTarget.value.trim();
     if (!v) return;
 
     let href = v;
@@ -145,7 +147,7 @@ function Control() {
               </div>
             );
           })}
-          <span type="plus" style={{ marginLeft: 10 }} onClick={newTab}>
+          <span datatype="plus" style={{ marginLeft: 10 }} onClick={newTab}>
             <IconPlus />
           </span>
         </>
@@ -181,5 +183,6 @@ function Control() {
   );
 }
 
-// eslint-disable-next-line no-undef
-ReactDOM.render(<Control />, document.getElementById('app'));
+const container = document.getElementById('app');
+const root = createRoot(container);
+root.render(<Control />);
