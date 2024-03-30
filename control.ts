@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron';
+import { WebPreferences, ipcRenderer } from 'electron';
 import { type TabID } from './index.js';
 
 // Used in Renderer process
@@ -46,7 +46,7 @@ const sendCloseTab = (id: TabID) => ipcRenderer.send('close-tab', id);
  * @param {string} [url]
  * @param {object} [references]
  */
-const sendNewTab = (url?: string, references?: object) => ipcRenderer.send('new-tab', url, references);
+const sendNewTab = (url?: string, references?: WebPreferences) => ipcRenderer.send('new-tab', url, references);
 
 /**
  * Tell browser view to switch to specified tab

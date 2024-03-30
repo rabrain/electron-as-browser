@@ -182,7 +182,7 @@ export default class BrowserLikeWindow extends EventEmitter {
         this.loadURL(url);
       },
       act: (e: unknown, actName: string & keyof WebContents) => webContentsAct(actName),
-      'new-tab': (e: unknown, url: string, references?: object) => {
+      'new-tab': (e: unknown, url: string, references?: WebPreferences) => {
         log.debug('new-tab with url', url);
         this.newTab(url, undefined, references);
       },
