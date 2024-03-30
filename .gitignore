@@ -1,4 +1,5 @@
 control-compiled.js
+example/main-bundle.js
 .cache/
 dist/
 # Logs

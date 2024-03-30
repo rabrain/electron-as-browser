@@ -9,7 +9,7 @@
     "tab",
     "addressbar"
   ],
-  "main": "index.js",
+  "exports": "./index.js",
   "author": "hui.liu",
   "license": "MIT",
   "repository": {
@@ -23,8 +23,9 @@
   "type": "module",
   "scripts": {
     "docs": "documentation build *.js -f html -o docs",
-    "start:control": "esbuild --bundle --platform=node --packages=external example/renderer/control.jsx --outfile=example/renderer/control-compiled.js",
-    "start": "electron example/main.js"
+    "control:build": "esbuild --bundle --platform=node --packages=external example/renderer/control.tsx --outfile=example/renderer/control-compiled.js",
+    "example:build": "esbuild --bundle --platform=node --format=esm --packages=external example/main.ts --outfile=example/main-bundle.js",
+    "start": "electron example/main-bundle.js"
   },
   "dependencies": {
     "electron-log": "^3.0.7"
@@ -39,7 +40,7 @@
     "classnames": "^2.5.1",
     "electron": "^29.1.6",
     "esbuild": "0.20.2",
-    "file-url": "^2.0.2",
+    "file-url": "^4.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "typescript": "^5.4.3"
