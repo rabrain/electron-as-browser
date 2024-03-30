@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
-let browser;
+let browser: BrowserLikeWindow | null;
 
 function createWindow() {
   browser = new BrowserLikeWindow({

@@ -1,10 +1,10 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { ipcRenderer } from 'electron';
 import cx from 'classnames';
-import useConnect from '../../useConnect';
-import action from '../../control';
+import useConnect from '../../useConnect.js';
+
+import action from '../../control.js';
+import type { TabID } from '../../index.js';
 
 const IconLoading = () => (
   <svg
@@ -97,12 +97,12 @@ function Control() {
 
   const { url, canGoForward, canGoBack, isLoading } = tabs[activeID] || {};
 
-  const onUrlChange = e => {
+  const onUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Sync to tab config
     const v = e.target.value;
     action.sendChangeURL(v);
   };
-  const onPressEnter = e => {
+  const onPressEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.keyCode !== 13) return;
     const v = e.currentTarget.value.trim();
     if (!v) return;
@@ -113,14 +113,14 @@ function Control() {
     }
     action.sendEnterURL(href);
   };
-  const close = (e, id) => {
+  const close = (e: React.MouseEvent<HTMLDivElement, MouseEvent>, id: any) => {
     e.stopPropagation();
     action.sendCloseTab(id);
   };
   const newTab = () => {
     action.sendNewTab();
   };
-  const switchTab = id => {
+  const switchTab = (id: TabID) => {
     action.sendSwitchTab(id);
   };
 
@@ -184,5 +184,5 @@ function Control() {
 }
 
 const container = document.getElementById('app');
-const root = createRoot(container);
+const root = createRoot(container!);
 root.render(<Control />);

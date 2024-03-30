@@ -1,9 +1,53 @@
 import { BrowserWindow, BrowserView, ipcMain } from 'electron';
-import EventEmitter from 'events';
+import type { BrowserWindowConstructorOptions, HandlerDetails, IpcMain, IpcMainEvent, Rectangle, WebContents, WebPreferences } from 'electron';
+import { EventEmitter } from 'events';
 import log from 'electron-log';
+
+export type TabID = number;
+
+export interface Tab {
+  url: string;
+  href: string;
+  title: string;
+  favicon: string;
+  isLoading: boolean;
+  canGoBack: boolean;
+  canGoForward: boolean;
+}
+
+export interface Tabs {
+  [key: TabID]: Tab;
+}
+
+export type WindowHandler = (details: HandlerDetails) => ({ action: 'deny' }) | ({ action: 'allow', outlivesOpener?: boolean, overrideBrowserWindowOptions?: BrowserWindowConstructorOptions })
+
+export interface BrowserLikeWindowOptions {
+  width?: number;
+  height?: number;
+  controlPanel: string;
+  controlHeight?: number;
+  viewReferences?: WebPreferences;
+  controlReferences?: WebPreferences;
+  winOptions?: BrowserWindowConstructorOptions;
+  startPage?: string;
+  blankPage?: string;
+  blankTitle?: string;
+  onNewWindow?: WindowHandler;
+  debug?: boolean;
+}
+
+interface Indexable {
+  [key: string]: any;
+}
+
+export type TabView = BrowserView & { id: TabID }
 
 log.transports.file.level = false;
 log.transports.console.level = false;
+
+function isCallable(action: any): action is CallableFunction {
+  return typeof action === 'function' && !!(action as CallableFunction).call
+}
 
 /**
  * @typedef {number} TabID
@@ -50,7 +94,16 @@ log.transports.console.level = false;
  * @param {boolean} [options.debug] - toggle debug
  */
 export default class BrowserLikeWindow extends EventEmitter {
-  constructor(options) {
+  options: BrowserLikeWindowOptions;
+  win: BrowserWindow;
+  defCurrentViewId: TabID | null;
+  defTabConfigs: Tabs;
+  views: Record<string, TabView>
+  tabs: TabID[];
+  ipc: IpcMainEvent | null;
+  controlView: BrowserView | null;
+
+  constructor(options: BrowserLikeWindowOptions) {
     super();
 
     this.options = options;
@@ -93,23 +146,24 @@ export default class BrowserLikeWindow extends EventEmitter {
     this.controlView.setAutoResize({ width: true });
     this.controlView.webContents.loadURL(controlPanel);
 
-    const webContentsAct = actionName => {
+    const webContentsAct = (actionName: string & keyof WebContents) => {
       const webContents = this.currentWebContents;
+      if (!webContents) return;
       const action = webContents && webContents[actionName];
-      if (typeof action === 'function') {
+      if (isCallable(action)) {
         if (actionName === 'reload' && webContents.getURL() === '') return;
-        action.call(webContents);
+        action.call<WebContents, any[], void>(webContents);
         log.debug(
           `do webContents action ${actionName} for ${this.currentViewId}:${webContents &&
             webContents.getTitle()}`
         );
       } else {
-        log.error('Invalid webContents action ', actionName);
+        log.error('Invalid webContents action:', actionName);
       }
     };
 
-    const channels = Object.entries({
-      'control-ready': e => {
+    const channels: Record<string, (event: IpcMainEvent, ...args: any[]) => void> = {
+      'control-ready': (e: IpcMainEvent) => {
         this.ipc = e;
 
         this.newTab(this.options.startPage || '');
@@ -121,21 +175,21 @@ export default class BrowserLikeWindow extends EventEmitter {
          */
         this.emit('control-ready', e);
       },
-      'url-change': (e, url) => {
-        this.setTabConfig(this.currentViewId, { url });
+      'url-change': (_: any, url: string) => {
+        if (this.currentViewId) this.setTabConfig(this.currentViewId, { url });
       },
-      'url-enter': (e, url) => {
+      'url-enter': (_: unknown, url: string) => {
         this.loadURL(url);
       },
-      act: (e, actName) => webContentsAct(actName),
-      'new-tab': (e, url, references) => {
+      act: (e: unknown, actName: string & keyof WebContents) => webContentsAct(actName),
+      'new-tab': (e: unknown, url: string, references?: WebPreferences) => {
         log.debug('new-tab with url', url);
         this.newTab(url, undefined, references);
       },
-      'switch-tab': (e, id) => {
+      'switch-tab': (_: unknown, id: TabID) => {
         this.switchTab(id);
       },
-      'close-tab': (e, id) => {
+      'close-tab': (e: unknown, id: TabID) => {
         log.debug('close tab ', { id, currentViewId: this.currentViewId });
         if (id === this.currentViewId) {
           const removeIndex = this.tabs.indexOf(id);
@@ -145,27 +199,28 @@ export default class BrowserLikeWindow extends EventEmitter {
         this.tabs = this.tabs.filter(v => v !== id);
         this.tabConfigs = {
           ...this.tabConfigs,
-          [id]: undefined
-        };
+          [id]: undefined as unknown as Tab
+        }
         this.destroyView(id);
 
         if (this.tabs.length === 0) {
-          this.newTab();
+          this.newTab(this.options.blankPage);
         }
       }
-    });
+    };
 
-    channels
+    Object.entries(channels)
       .map(([name, listener]) => [
         name,
-        (e, ...args) => {
+        (e: IpcMainEvent, ...args: any[]) => {
           // Support multiple BrowserLikeWindow
           if (this.controlView && e.sender === this.controlView.webContents) {
             log.debug(`Trigger ${name} from ${e.sender.id}`);
             listener(e, ...args);
           }
         }
-      ])
+      ] as [string, (event: IpcMainEvent, ...args: any[]) => void]
+      )
       .forEach(([name, listener]) => ipcMain.on(name, listener));
 
     /**
@@ -176,12 +231,12 @@ export default class BrowserLikeWindow extends EventEmitter {
     this.win.on('closed', () => {
       // Remember to clear all ipcMain events as ipcMain bind
       // on every new browser instance
-      channels.forEach(([name, listener]) => ipcMain.removeListener(name, listener));
+      Object.entries(channels).forEach(([name, listener]) => ipcMain.removeListener(name, listener));
 
       // Prevent BrowserView memory leak on close
       this.tabs.forEach(id => this.destroyView(id));
       if (this.controlView) {
-        this.controlView.webContents.destroy();
+        this.controlView.webContents.close();
         this.controlView = null;
         log.debug('Control view destroyed');
       }
@@ -197,9 +252,9 @@ export default class BrowserLikeWindow extends EventEmitter {
   /**
    * Get control view's bounds
    *
-   * @returns {Bounds} Bounds of control view(exclude window's frame)
+   * @returns {Rectangle} Bounds of control view(exclude window's frame)
    */
-  getControlBounds() {
+  getControlBounds(): Rectangle {
     const contentBounds = this.win.getContentBounds();
     return {
       x: 0,
@@ -263,58 +318,54 @@ export default class BrowserLikeWindow extends EventEmitter {
     }
   }
 
-  setTabConfig(viewId, kv) {
+  setTabConfig(viewId: TabID, kv: Partial<Tab>) {
     const tab = this.tabConfigs[viewId];
     const { webContents } = this.views[viewId] || {};
     this.tabConfigs = {
       ...this.tabConfigs,
       [viewId]: {
         ...tab,
-        canGoBack: webContents && webContents.canGoBack(),
-        canGoForward: webContents && webContents.canGoForward(),
-        ...kv
+        canGoBack: webContents?.canGoBack() ?? false,
+        canGoForward: webContents?.canGoForward() ?? false,
+        ...kv,
       }
     };
     return this.tabConfigs;
   }
 
-  loadURL(url) {
+
+  loadURL(url: string) {
     const { currentView } = this;
     if (!url || !currentView) return;
 
     const { id, webContents } = currentView;
 
     // Prevent addEventListeners on same webContents when enter urls in same tab
-    const MARKS = '__IS_INITIALIZED__';
+    const MARKS = '__IS_INITIALIZED__' as keyof WebContents;
     if (webContents[MARKS]) {
       webContents.loadURL(url);
       return;
     }
 
-    const onNewWindow = (e, newUrl, frameName, disposition, winOptions) => {
-      log.debug('on new-window', { disposition, newUrl, frameName });
+    const onNewWindow: WindowHandler = (detail) => {
+      let { url, frameName, disposition } = detail;
+      log.debug('on new-window', { disposition, url, frameName });
 
-      if (!new URL(newUrl).host) {
+      if (!new URL(url).host) {
         // Handle newUrl = 'about:blank' in some cases
         log.debug('Invalid url open with default window');
-        return;
+        return { action: 'deny' }
       }
 
-      e.preventDefault();
-
       if (disposition === 'new-window') {
-        e.newGuest = new BrowserWindow(winOptions);
-      } else if (disposition === 'foreground-tab') {
-        this.newTab(newUrl, id);
-        // `newGuest` must be setted to prevent freeze trigger tab in case.
-        // The window will be destroyed automatically on trigger tab closed.
-        e.newGuest = new BrowserWindow({ ...winOptions, show: false });
+        return { action: 'allow' }
       } else {
-        this.newTab(newUrl, id);
+        this.newTab(url, id);
+        return { action: 'deny' }
       }
     };
 
-    webContents.on('new-window', this.options.onNewWindow || onNewWindow);
+    webContents.setWindowOpenHandler(this.options.onNewWindow || onNewWindow);
 
     // Keep event in order
     webContents
@@ -362,7 +413,7 @@ export default class BrowserLikeWindow extends EventEmitter {
       });
 
     webContents.loadURL(url);
-    webContents[MARKS] = true;
+    (webContents as Indexable)[MARKS as string] = true;
 
     this.setContentBounds();
 
@@ -371,10 +422,11 @@ export default class BrowserLikeWindow extends EventEmitter {
     }
   }
 
-  setCurrentView(viewId) {
+  setCurrentView(viewId: TabID) {
     if (!viewId) return;
     if (this.currentView) this.win.removeBrowserView(this.currentView);
-    this.win.addBrowserView(this.views[viewId]);
+    const view = this.views[viewId];
+    if (view) this.win.addBrowserView(view);
     this.currentViewId = viewId;
   }
 
@@ -387,7 +439,7 @@ export default class BrowserLikeWindow extends EventEmitter {
    *
    * @fires BrowserLikeWindow#new-tab
    */
-  newTab(url, appendTo, references) {
+  newTab(url?: string, appendTo?: TabID, references?: WebPreferences) {
     const view = new BrowserView({
       webPreferences: {
         // Set sandbox to support window.opener
@@ -395,8 +447,7 @@ export default class BrowserLikeWindow extends EventEmitter {
         sandbox: true,
         ...(references || this.options.viewReferences)
       }
-    });
-
+    }) as TabView
     view.id = view.webContents.id;
 
     if (appendTo) {
@@ -411,7 +462,7 @@ export default class BrowserLikeWindow extends EventEmitter {
     const lastView = this.currentView;
     this.setCurrentView(view.id);
     view.setAutoResize({ width: true, height: true });
-    this.loadURL(url || this.options.blankPage);
+    if (url) this.loadURL(url);
     this.setTabConfig(view.id, {
       title: this.options.blankTitle || 'about:blank'
     });
@@ -431,10 +482,10 @@ export default class BrowserLikeWindow extends EventEmitter {
    * Swith to tab
    * @param {TabID} viewId
    */
-  switchTab(viewId) {
+  switchTab(viewId: TabID) {
     log.debug('switch to tab', viewId);
     this.setCurrentView(viewId);
-    this.currentView.webContents.focus();
+    this.currentView?.webContents.focus();
   }
 
   /**
@@ -442,11 +493,13 @@ export default class BrowserLikeWindow extends EventEmitter {
    * @param {TabID} viewId
    * @ignore
    */
-  destroyView(viewId) {
+  destroyView(viewId: TabID) {
     const view = this.views[viewId];
     if (view) {
-      view.webContents.destroy();
-      this.views[viewId] = undefined;
+      // todo: investigate why `close` crashes the app.
+      // view.webContents.close();
+      (view.webContents as any).destroy()
+      this.views[viewId] = undefined as unknown as TabView
       log.debug(`${viewId} destroyed`);
     }
   }
