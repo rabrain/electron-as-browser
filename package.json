@@ -1,6 +1,6 @@
 {
   "name": "electron-as-browser",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Make electron like browser easy and flexible.",
   "keywords": [
     "electron",
@@ -9,14 +9,18 @@
     "tab",
     "addressbar"
   ],
-  "exports": "./index.js",
-  "author": "hui.liu",
+  "exports": {
+    ".": "./dist/index.js",
+    "./*": "./dist/*.js"
+  },
+  "author": "lilac",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/hulufei/electron-as-browser.git"
   },
   "files": [
+    "dist",
     "*.js",
     "*.ts"
   ],
@@ -25,7 +29,8 @@
     "docs": "documentation build *.js -f html -o docs",
     "control:build": "esbuild --bundle --platform=node --packages=external example/renderer/control.tsx --outfile=example/renderer/control-compiled.js",
     "example:build": "esbuild --bundle --platform=node --format=esm --packages=external example/main.ts --outfile=example/main-bundle.js",
-    "start": "electron example/main-bundle.js"
+    "start": "electron example/main-bundle.js",
+    "build": "tsc"
   },
   "dependencies": {
     "electron-log": "^3.0.7"
