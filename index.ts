@@ -155,7 +155,7 @@ export default class BrowserLikeWindow extends EventEmitter {
         action.call<WebContents, any[], void>(webContents);
         log.debug(
           `do webContents action ${actionName} for ${this.currentViewId}:${webContents &&
-          webContents.getTitle()}`
+            webContents.getTitle()}`
         );
       } else {
         log.error('Invalid webContents action:', actionName);
@@ -447,8 +447,7 @@ export default class BrowserLikeWindow extends EventEmitter {
         sandbox: true,
         ...(references || this.options.viewReferences)
       }
-
-    }) as BrowserView & { id: TabID }
+    }) as TabView
     view.id = view.webContents.id;
 
     if (appendTo) {
@@ -504,6 +503,4 @@ export default class BrowserLikeWindow extends EventEmitter {
       log.debug(`${viewId} destroyed`);
     }
   }
-
-
 }
