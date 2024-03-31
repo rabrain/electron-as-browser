@@ -34,7 +34,7 @@ jobs:
           node-version: 16
       - run: yarn install --frozen-lockfile
       - run: yarn build
-      - run: yarn publish
+      - run: yarn publish --access public
         env:
           NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       # publish to Github Registry
