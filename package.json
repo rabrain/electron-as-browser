@@ -1,5 +1,5 @@
 {
-  "name": "electron-as-browser",
+  "name": "@rabrain/electron-as-browser",
   "version": "1.1.1",
   "description": "Make electron like browser easy and flexible.",
   "keywords": [
